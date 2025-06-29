@@ -16,51 +16,77 @@ class CentroDeControle:
         }
         self.naves_cadastradas = {}
 
-        # NOVO: Estruturas de dados para as estatísticas
+        # Estruturas de dados para as estatísticas
         self.stats_solicitacoes_criadas = 0
         self.stats_atendimentos_por_prioridade = {'EMERGENCIA': 0, 'ALTA': 0, 'NORMAL': 0}
         self.stats_atendimentos_por_especialista = {'Comunicações': 0, 'Energia': 0, 'Navegação': 0, 'Suporte à Vida': 0}
-        self.stats_triagens_por_operador = {'Operador-01': 0} # Preparado para múltiplos operadores no futuro
+        self.stats_triagens_por_operador = {'Operador-GUI': 0, 'Operador-01': 0}
 
-    # ALTERADO: Agora também conta as solicitações criadas.
     def adicionar_solicitacao(self, solicitacao):
-        self.stats_solicitacoes_criadas += 1 # Contabiliza a criação
+        """Adiciona uma nova solicitação à fila de triagem apropriada."""
+        self.stats_solicitacoes_criadas += 1
         if solicitacao.prioridade == "EMERGENCIA":
-            self.fila_triagem_emergencia.prepend(solicitacao)
+            # CORREÇÃO: Alterado de prepend() para append() para manter a ordem de chegada (FIFO).
+            self.fila_triagem_emergencia.append(solicitacao)
         elif solicitacao.prioridade == "ALTA":
             self.fila_triagem_alta.append(solicitacao)
         elif solicitacao.prioridade == "NORMAL":
             self.fila_triagem_normal.append(solicitacao)
+    
+    def get_todas_solicitacoes_para_triagem(self):
+        """
+        Retorna uma lista única com todas as solicitações das filas de triagem,
+        ordenadas por prioridade: Emergência, Alta, Normal.
+        """
+        todas = []
+        for solicitacao in self.fila_triagem_emergencia:
+            todas.append(solicitacao)
+        for solicitacao in self.fila_triagem_alta:
+            todas.append(solicitacao)
+        for solicitacao in self.fila_triagem_normal:
+            todas.append(solicitacao)
+        return todas
 
-    def proxima_solicitacao_para_triagem(self):
-        # (Este método não precisa de alterações)
-        if not self.fila_triagem_emergencia.is_empty():
-            return self.fila_triagem_emergencia.remove_first()
-        elif not self.fila_triagem_alta.is_empty():
-            return self.fila_triagem_alta.remove_first()
-        elif not self.fila_triagem_normal.is_empty():
-            return self.fila_triagem_normal.remove_first()
-        else:
-            return None
+    def remover_solicitacao_da_triagem(self, solicitacao_a_remover):
+        """
+        Busca uma solicitação específica em todas as filas de triagem e a remove.
+        Utiliza o método 'remover_elemento' da ListaEncadeada.
+        """
+        try:
+            self.fila_triagem_emergencia.remover_elemento(solicitacao_a_remover)
+            return True
+        except ValueError:
+            pass 
 
-    # NOVO: Método dedicado para contabilizar o trabalho do operador.
+        try:
+            self.fila_triagem_alta.remover_elemento(solicitacao_a_remover)
+            return True
+        except ValueError:
+            pass
+
+        try:
+            self.fila_triagem_normal.remover_elemento(solicitacao_a_remover)
+            return True
+        except ValueError:
+            return False
+
     def contabilizar_triagem(self, nome_operador):
+        """Contabiliza o trabalho do operador de triagem."""
         if nome_operador in self.stats_triagens_por_operador:
             self.stats_triagens_por_operador[nome_operador] += 1
         else:
-            # Caso um novo operador seja adicionado no futuro
             self.stats_triagens_por_operador[nome_operador] = 1
 
     def enviar_para_especialista(self, solicitacao, especialidade):
-        # (Este método não precisa de alterações)
+        """Envia uma solicitação para a fila do especialista correspondente."""
         if especialidade in self.filas_especialistas:
             fila_do_especialista = self.filas_especialistas[especialidade]
             solicitacao.especialista_responsavel = especialidade
             fila_do_especialista.append(solicitacao)
             print(f"Solicitação da nave '{solicitacao.nome_nave}' enviada para o especialista em '{especialidade}'.")
 
-    # ALTERADO: Agora também atualiza todas as estatísticas de finalização.
     def arquivar_solicitacao_na_nave(self, solicitacao_finalizada):
+        """Arquiva uma solicitação finalizada no histórico da nave e atualiza as estatísticas."""
         nome_nave = solicitacao_finalizada.nome_nave
         if nome_nave not in self.naves_cadastradas:
             self.naves_cadastradas[nome_nave] = Nave(nome=nome_nave)
@@ -69,22 +95,20 @@ class CentroDeControle:
         nave_para_arquivar.historico_solicitacoes.append(solicitacao_finalizada)
         print(f"Atendimento arquivado com sucesso no histórico da nave '{nome_nave}'.")
 
-        # NOVO: Atualizando os contadores de estatísticas
-        # 1. Contar por prioridade
         prioridade = solicitacao_finalizada.prioridade
         if prioridade in self.stats_atendimentos_por_prioridade:
             self.stats_atendimentos_por_prioridade[prioridade] += 1
 
-        # 2. Contar por especialista
         especialista = solicitacao_finalizada.especialista_responsavel
         if especialista in self.stats_atendimentos_por_especialista:
             self.stats_atendimentos_por_especialista[especialista] += 1
 
     def consultar_historico_nave(self, nome_nave):
+        """Consulta o histórico de uma nave específica."""
         return self.naves_cadastradas.get(nome_nave, None)
 
-    # NOVO: Método para calcular a nave com mais chamados sob demanda.
     def get_nave_com_mais_chamados(self):
+        """Retorna a nave com o maior número de chamados registrados."""
         if not self.naves_cadastradas:
             return "Nenhuma nave com histórico.", 0
 

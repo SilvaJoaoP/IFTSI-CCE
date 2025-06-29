@@ -1,9 +1,9 @@
-from .no import No # O '.' antes de 'no' indica que estamos importando do mesmo pacote/diretório
+from .no import No 
 
 class ListaEncadeada:
     """Implementação de uma Lista Encadeada."""
     def __init__(self):
-        self.head = None # A cabeça da lista, inicialmente vazia (None)
+        self.head = None 
         self._size = 0
 
     def is_empty(self):
@@ -12,15 +12,12 @@ class ListaEncadeada:
 
     def append(self, elemento):
         """Adiciona um elemento no final da lista."""
-        # Se a lista estiver vazia, o novo nó é a cabeça
         if self.is_empty():
             self.head = No(elemento)
         else:
-            # Percorre a lista até encontrar o último nó
             ponteiro = self.head
             while ponteiro.proximo:
                 ponteiro = ponteiro.proximo
-            # Adiciona o novo nó após o último
             ponteiro.proximo = No(elemento)
         self._size += 1
 
@@ -41,21 +38,54 @@ class ListaEncadeada:
         self._size -= 1
         return elemento_removido
 
+    # NOVO: Método para buscar um elemento. Retorna o nó se encontrar.
+    def buscar(self, valor_buscado):
+        """Busca um elemento na lista e retorna o nó inteiro."""
+        ponteiro = self.head
+        while ponteiro:
+            if ponteiro.dado == valor_buscado:
+                return ponteiro
+            ponteiro = ponteiro.proximo
+        return None # Retorna None se não encontrar
+
+    # NOVO: Método para remover um elemento específico.
+    def remover_elemento(self, elemento):
+        """Remove um elemento específico da lista."""
+        if self.is_empty():
+            raise ValueError("A lista está vazia.")
+
+        # Caso o elemento a ser removido seja a cabeça da lista
+        if self.head.dado == elemento:
+            self.remove_first()
+            return True
+
+        # Percorre a lista para encontrar o elemento
+        anterior = self.head
+        ponteiro = self.head.proximo
+        while ponteiro:
+            if ponteiro.dado == elemento:
+                # Encontrou o elemento, remove a referência a ele
+                anterior.proximo = ponteiro.proximo
+                self._size -= 1
+                return True
+            anterior = ponteiro
+            ponteiro = ponteiro.proximo
+        
+        # Se chegou aqui, o elemento não foi encontrado
+        raise ValueError(f"Elemento {elemento} não encontrado na lista.")
+
     def __len__(self):
         """Retorna o tamanho da lista."""
         return self._size
+    
+    # NOVO: Um iterador para facilitar o uso em laços for (útil na GUI)
+    def __iter__(self):
+        ponteiro = self.head
+        while ponteiro:
+            yield ponteiro.dado
+            ponteiro = ponteiro.proximo
 
     def __str__(self):
         """Retorna uma representação em string da lista."""
-        if self.is_empty():
-            return "[]"
-        
-        string_lista = "["
-        ponteiro = self.head
-        while ponteiro:
-            string_lista += str(ponteiro.dado)
-            if ponteiro.proximo:
-                string_lista += ", "
-            ponteiro = ponteiro.proximo
-        string_lista += "]"
-        return string_lista
+        # Usa o iterador para criar a string de forma mais elegante
+        return "[" + ", ".join(str(dado) for dado in self) + "]"
