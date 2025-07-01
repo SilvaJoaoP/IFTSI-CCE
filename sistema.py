@@ -26,7 +26,6 @@ class CentroDeControle:
         """Adiciona uma nova solicitação à fila de triagem apropriada."""
         self.stats_solicitacoes_criadas += 1
         if solicitacao.prioridade == "EMERGENCIA":
-            # CORREÇÃO: Alterado de prepend() para append() para manter a ordem de chegada (FIFO).
             self.fila_triagem_emergencia.append(solicitacao)
         elif solicitacao.prioridade == "ALTA":
             self.fila_triagem_alta.append(solicitacao)
@@ -78,11 +77,15 @@ class CentroDeControle:
             self.stats_triagens_por_operador[nome_operador] = 1
 
     def enviar_para_especialista(self, solicitacao, especialidade):
-        """Envia uma solicitação para a fila do especialista correspondente."""
+        """Envia uma solicitação para a fila do especialista, mantendo a ordem de prioridade e tempo."""
         if especialidade in self.filas_especialistas:
             fila_do_especialista = self.filas_especialistas[especialidade]
             solicitacao.especialista_responsavel = especialidade
-            fila_do_especialista.append(solicitacao)
+            
+            # ===== ALTERAÇÃO CRÍTICA AQUI =====
+            # Chamando o método com o nome correto para a dupla ordenação.
+            fila_do_especialista.inserir_ordenado_por_prioridade_e_tempo(solicitacao)
+            
             print(f"Solicitação da nave '{solicitacao.nome_nave}' enviada para o especialista em '{especialidade}'.")
 
     def arquivar_solicitacao_na_nave(self, solicitacao_finalizada):
